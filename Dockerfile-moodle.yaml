@@ -1,0 +1,53 @@
+﻿name: moodle-sandbox
+
+services:
+  mariadb:
+    image: mariadb:12.3
+    restart: always
+    command:
+      - "mariadbd"
+      - "--character-set-server=utf8mb4"
+      - "--collation-server=utf8mb4_unicode_ci"
+    environment:
+      MARIADB_ROOT_PASSWORD: moodle_db_password
+      MARIADB_DATABASE: moodle
+      MARIADB_USER: moodle
+      MARIADB_PASSWORD: moodle_db_password
+      MARIADB_CHARACTER_SET: utf8mb4
+      MARIADB_COLLATE: utf8mb4_unicode_ci
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  moodle:
+    image: elestio/moodle:v5.2.1
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      MOODLE_DATABASE_TYPE: mariadb
+      MOODLE_DATABASE_HOST: mariadb
+      MOODLE_DATABASE_PORT_NUMBER: 3306
+      MOODLE_DATABASE_NAME: moodle
+      MOODLE_DATABASE_USER: moodle
+      MOODLE_DATABASE_PASSWORD: moodle_db_password
+      MOODLE_USERNAME: admin
+      MOODLE_PASSWORD: Moodle_Password123!
+      MOODLE_EMAIL: admin@example.com
+      MOODLE_SITE_NAME: Moodle
+      MOODLE_HOST: http://localhost:8080
+      PHP_INI-zend.exception_ignore_args: 1
+    volumes:
+      - moodledata_data:/var/moodledata
+      - ./moodle-install.sh:/docker-entrypoint.d/20-moodle-install.sh:ro
+    depends_on:
+      mariadb:
+        condition: service_healthy
+
+volumes:
+  mariadb_data:
+  moodledata_data:
